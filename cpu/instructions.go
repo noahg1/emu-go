@@ -157,7 +157,7 @@ func testADDHL() {
 	// Print the result of the addition
 	fmt.Printf("HL register after ADDHL: %d\n", cpu.registers.get_hl()) // Should be 4109
 	fmt.Printf("Carry flag: %v\n", cpu.flags.carry) // Should be false
-	fmt.Printf("Half Carry Flag: %v\n", cpu.flags.half_carry) // Should be false
+	fmt.Printf("Half Carry Flag: %v\n", cpu.flags.half_carry) // Should be true
 }
 
 func main() {
