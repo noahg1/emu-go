@@ -5,27 +5,31 @@ import (
 )
 
 // ArithmeticTarget represents the registers
-type ArithmeticTarget int
+type Target int
 
 const (
-	A ArithmeticTarget = iota
+	A Target = iota
 	B
 	C
 	D
 	E
 	H
 	L
+	BC
+	DE
+	HL
 )
 
 // Instruction represents an instruction with an arithmetic target
 type Instruction struct {
-	opcode       string
-	arithmeticTarget ArithmeticTarget
+	opcode string
+	target Target
 }
 
 // Constants for instruction types
 const (
-	ADD = "ADD"
+	ADD   = "ADD"
+	ADDHL = "ADDHL"
 )
 
 // CPU represents the CPU with a set of registers
@@ -42,77 +46,96 @@ func NewCPU() *CPU {
 }
 
 // NewInstruction creates a new instruction with the given opcode and target
-func NewInstruction(opcode string, target ArithmeticTarget) Instruction {
+func NewInstruction(opcode string, target Target) Instruction {
 	return Instruction{
-		opcode:          opcode,
-		arithmeticTarget: target,
+		opcode: opcode,
+		target: target,
 	}
 }
 
-func (cpu *CPU) execute(instruct Instruction) {
+func (cpu *CPU) execute(instruct Instruction) (string, error) {
 	switch instruct.opcode{
 	case "ADD" :
-		switch instruct.arithmeticTarget {
+		switch instruct.target {
 		case A :
-			value := cpu.registers.a
-			newVal := cpu.add(value)
-			cpu.registers.a = newVal
+			cpu.registers.a = cpu.add(cpu.registers.a)
+			return "" , nil
 		case B :
-			value := cpu.registers.b
-			newVal := cpu.add(value)
-			cpu.registers.a = newVal
+			cpu.registers.a = cpu.add(cpu.registers.b)
+			return "" , nil
 		case C :
-			value := cpu.registers.c
-			newVal := cpu.add(value)
-			cpu.registers.a = newVal
+			cpu.registers.a = cpu.add(cpu.registers.c)
+			return "" , nil
 		case D :
-			value := cpu.registers.d
-			newVal := cpu.add(value)
-			cpu.registers.a = newVal
+			cpu.registers.a = cpu.add(cpu.registers.d)
+			return "" , nil
 		case E :
-			value := cpu.registers.e
-			newVal := cpu.add(value)
-			cpu.registers.a = newVal
+			cpu.registers.a = cpu.add(cpu.registers.e)
+			return "" , nil
 		case H :
-			value := cpu.registers.h
-			newVal := cpu.add(value)
-			cpu.registers.a = newVal
+			cpu.registers.a = cpu.add(cpu.registers.h)
+			return "" , nil
 		case L :
-			value := cpu.registers.l
-			newVal := cpu.add(value)
-			cpu.registers.a = newVal
+			cpu.registers.a = cpu.add(cpu.registers.l)
+			return "" , nil
 		}
+		return "", fmt.Errorf("Unsupported target: %d for instruction: ADD", instruct.target)
+	case "ADDHL" :
+		switch instruct.target {
+		case BC :
+			cpu.registers.set_hl(cpu.addhl(cpu.registers.get_bc()))
+			return "", nil
+		case DE :
+			cpu.registers.set_hl(cpu.addhl(cpu.registers.get_de()))
+			return "", nil
+		case HL :
+			cpu.registers.set_hl(cpu.addhl(cpu.registers.get_hl()))
+			return "", nil
+		}
+		return "", fmt.Errorf("Unsupported target: %d for instruction: ADDHL", instruct.target)
 	}
+	return "", nil
 }
 
 // Add performs the addition operation on the A register and another value
 func (cpu *CPU) add(value uint8) uint8 {
 	newValue := uint16(cpu.registers.a) + uint16(value)
-	overflow := newValue > 0xFF // Check for overflow
-	if overflow {
-		// Set the carry flag if there is an overflow
-		cpu.flags.carry = true
-	} else {
-		cpu.flags.carry = false
-	}
 
-	// Since Go doesn't have overflowing_add like Rust, we manually return the lower byte
+	cpu.flags.carry = newValue > 0xFF
+	cpu.flags.half_carry = (cpu.registers.a & 0xF) + (value & 0xF) >= 0x10
+	cpu.flags.subtract = false
+
 	return uint8(newValue)
+}
+
+func (cpu *CPU) addhl(value uint16) uint16 {
+	newValue := uint16(cpu.registers.get_hl()) + uint16(value)
+
+	cpu.flags.carry = newValue > 0xFF
+	cpu.flags.half_carry = ((cpu.registers.get_hl() & 0xFFF) + (value & 0xFFF) >= 0x1000)
+	cpu.flags.subtract = false
+
+	return uint16(newValue)
 }
 
 func main() {
 	// Create a new CPU and set some initial values
 	cpu := NewCPU()
+	cpu.registers.set_hl(0x0000)
 	cpu.registers.set_af(0x6400) // 100 in A
 	cpu.registers.set_bc(0x00FF) // 255 in C
 
 	// Create an ADD instruction targeting the C register
-	instruction := NewInstruction(ADD, C)
+	instruction := NewInstruction(ADDHL, BC)
 
 	// Execute the instruction
-	cpu.execute(instruction)
+	_, err := cpu.execute(instruction)
+	if err != nil {
+		panic(err)
+	}
 
 	// Print the result of the addition
-	fmt.Printf("A register after ADD: %d\n", cpu.registers.a) // Should be 99
+	fmt.Printf("HL register after ADDHL: %d\n", cpu.registers.get_hl()) // Should be 99
 	fmt.Printf("Carry flag: %v\n", cpu.flags.carry) // Should be true
+	fmt.Printf("Half Carry Flag: %v\n", cpu.flags.half_carry)
 }
