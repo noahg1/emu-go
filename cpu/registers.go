@@ -41,3 +41,6 @@ func (r *Registers) set_hl(value uint16) {
 	r.l = uint8(value & 0xFF)
 }
 
+func emptyRegisters() Registers{
+	return Registers{0,0,0,0,0,0,0,0}
+}
