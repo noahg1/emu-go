@@ -109,20 +109,40 @@ func (cpu *CPU) add(value uint8) uint8 {
 }
 
 func (cpu *CPU) addhl(value uint16) uint16 {
-	newValue := uint16(cpu.registers.get_hl()) + uint16(value)
+	newValue := uint32(cpu.registers.get_hl()) + uint32(value)
 
-	cpu.flags.carry = newValue > 0xFF
-	cpu.flags.half_carry = ((cpu.registers.get_hl() & 0xFFF) + (value & 0xFFF) >= 0x1000)
+	cpu.flags.carry = newValue > 0xFFFF
+	cpu.flags.half_carry = ((cpu.registers.get_hl() & 0xFF) + (value & 0xFF) >= 0x100)
 	cpu.flags.subtract = false
 
 	return uint16(newValue)
 }
 
-func main() {
+func testADD () {
 	// Create a new CPU and set some initial values
 	cpu := NewCPU()
-	cpu.registers.set_hl(0x0000)
 	cpu.registers.set_af(0x6400) // 100 in A
+	cpu.registers.set_bc(0x00FF) // 255 in C
+
+	// Create an ADD instruction targeting the C register
+	instruction := NewInstruction(ADD, C)
+
+	// Execute the instruction
+	_, err := cpu.execute(instruction)
+	if err != nil {
+		panic(err)
+	}
+
+	// Print the result of the addition
+	fmt.Printf("\nA register after ADD: %d\n", cpu.registers.a) // Should be 99
+	fmt.Printf("Carry flag: %v\n", cpu.flags.carry) // Should be true
+	fmt.Printf("Half Carry Flag: %v\n\n", cpu.flags.half_carry) // Should be true
+}
+
+func testADDHL() {
+	// Create a new CPU and set some initial values
+	cpu := NewCPU()
+	cpu.registers.set_hl(0x00FF) // 255 in HL
 	cpu.registers.set_bc(0x00FF) // 255 in C
 
 	// Create an ADD instruction targeting the C register
@@ -135,7 +155,12 @@ func main() {
 	}
 
 	// Print the result of the addition
-	fmt.Printf("HL register after ADDHL: %d\n", cpu.registers.get_hl()) // Should be 99
-	fmt.Printf("Carry flag: %v\n", cpu.flags.carry) // Should be true
-	fmt.Printf("Half Carry Flag: %v\n", cpu.flags.half_carry)
+	fmt.Printf("HL register after ADDHL: %d\n", cpu.registers.get_hl()) // Should be 4109
+	fmt.Printf("Carry flag: %v\n", cpu.flags.carry) // Should be false
+	fmt.Printf("Half Carry Flag: %v\n", cpu.flags.half_carry) // Should be false
+}
+
+func main() {
+	testADD()
+	testADDHL()
 }
