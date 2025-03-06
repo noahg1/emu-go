@@ -10,8 +10,8 @@ func (r *Registers) get_bc() uint16 {
 }
 
 func (r *Registers) set_bc(value uint16) {
-	r.b = uint8((value & 0xFF00) >> 8) 
-	r.c = uint8(value & 0xFF)
+	r.b = uint8((value & 0xFF00) >> 8) // Extract the high byte and store in r.b
+	r.c = uint8(value & 0xFF) // Extract the low byte and store in r.c
 }
 
 func (r *Registers) get_af() uint16 {
