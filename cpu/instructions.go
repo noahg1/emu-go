@@ -53,48 +53,48 @@ func NewInstruction(opcode string, target Target) Instruction {
 	}
 }
 
-func (cpu *CPU) execute(instruct Instruction) (string, error) {
+func (cpu *CPU) execute(instruct Instruction) error {
 	switch instruct.opcode{
 	case "ADD" :
 		switch instruct.target {
 		case A :
 			cpu.registers.a = cpu.add(cpu.registers.a)
-			return "" , nil
+			return nil
 		case B :
 			cpu.registers.a = cpu.add(cpu.registers.b)
-			return "" , nil
+			return nil
 		case C :
 			cpu.registers.a = cpu.add(cpu.registers.c)
-			return "" , nil
+			return nil
 		case D :
 			cpu.registers.a = cpu.add(cpu.registers.d)
-			return "" , nil
+			return nil
 		case E :
 			cpu.registers.a = cpu.add(cpu.registers.e)
-			return "" , nil
+			return nil
 		case H :
 			cpu.registers.a = cpu.add(cpu.registers.h)
-			return "" , nil
+			return nil
 		case L :
 			cpu.registers.a = cpu.add(cpu.registers.l)
-			return "" , nil
+			return nil
 		}
-		return "", fmt.Errorf("Unsupported target: %d for instruction: ADD", instruct.target)
+		return fmt.Errorf("Unsupported target: %d for instruction: ADD", instruct.target)
 	case "ADDHL" :
 		switch instruct.target {
 		case BC :
 			cpu.registers.set_hl(cpu.addhl(cpu.registers.get_bc()))
-			return "", nil
+			return nil
 		case DE :
 			cpu.registers.set_hl(cpu.addhl(cpu.registers.get_de()))
-			return "", nil
+			return nil
 		case HL :
 			cpu.registers.set_hl(cpu.addhl(cpu.registers.get_hl()))
-			return "", nil
+			return nil
 		}
-		return "", fmt.Errorf("Unsupported target: %d for instruction: ADDHL", instruct.target)
+		return fmt.Errorf("Unsupported target: %d for instruction: ADDHL", instruct.target)
 	}
-	return "", nil
+	return nil
 }
 
 // Add performs the addition operation on the A register and another value
@@ -128,7 +128,7 @@ func testADD () {
 	instruction := NewInstruction(ADD, C)
 
 	// Execute the instruction
-	_, err := cpu.execute(instruction)
+	err := cpu.execute(instruction)
 	if err != nil {
 		panic(err)
 	}
@@ -149,7 +149,7 @@ func testADDHL() {
 	instruction := NewInstruction(ADDHL, BC)
 
 	// Execute the instruction
-	_, err := cpu.execute(instruction)
+	err := cpu.execute(instruction)
 	if err != nil {
 		panic(err)
 	}
