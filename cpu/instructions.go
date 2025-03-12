@@ -30,6 +30,7 @@ type Instruction struct {
 const (
 	ADD   = "ADD"
 	ADDHL = "ADDHL"
+	ADC   = "ADC"
 )
 
 // CPU represents the CPU with a set of registers
@@ -78,8 +79,10 @@ func (cpu *CPU) execute(instruct Instruction) error {
 		case L :
 			cpu.registers.a = cpu.add(cpu.registers.l)
 			return nil
+		default :
+			return fmt.Errorf("unsupported target: %d for instruction: add", instruct.target)
 		}
-		return fmt.Errorf("Unsupported target: %d for instruction: ADD", instruct.target)
+		
 	case "ADDHL" :
 		switch instruct.target {
 		case BC :
@@ -91,9 +94,38 @@ func (cpu *CPU) execute(instruct Instruction) error {
 		case HL :
 			cpu.registers.set_hl(cpu.addhl(cpu.registers.get_hl()))
 			return nil
+		default :
+			return fmt.Errorf("unsupported target: %d for instruction: addhl", instruct.target)
 		}
-		return fmt.Errorf("Unsupported target: %d for instruction: ADDHL", instruct.target)
+		
+	case "ADC" :
+		switch instruct.target {
+		case A :
+			cpu.registers.a = cpu.adc(cpu.registers.a)
+			return nil
+		case B :
+			cpu.registers.a = cpu.adc(cpu.registers.b)
+			return nil
+		case C :
+			cpu.registers.a = cpu.adc(cpu.registers.c)
+			return nil
+		case D :
+			cpu.registers.a = cpu.adc(cpu.registers.d)
+			return nil
+		case E :
+			cpu.registers.a = cpu.adc(cpu.registers.e)
+			return nil
+		case H :
+			cpu.registers.a = cpu.adc(cpu.registers.h)
+			return nil
+		case L :
+			cpu.registers.a = cpu.adc(cpu.registers.l)
+			return nil
+		default :
+			return fmt.Errorf("unsupported target: %d for instruction: adc", instruct.target)
+		}
 	}
+	
 	return nil
 }
 
@@ -104,6 +136,8 @@ func (cpu *CPU) add(value uint8) uint8 {
 	cpu.flags.carry = newValue > 0xFF
 	cpu.flags.half_carry = (cpu.registers.a & 0xF) + (value & 0xF) >= 0x10
 	cpu.flags.subtract = false
+		cpu.flags.zero = newValue == 0
+
 
 	return uint8(newValue)
 }
@@ -114,11 +148,30 @@ func (cpu *CPU) addhl(value uint16) uint16 {
 	cpu.flags.carry = newValue > 0xFFFF
 	cpu.flags.half_carry = ((cpu.registers.get_hl() & 0xFF) + (value & 0xFF) >= 0x100)
 	cpu.flags.subtract = false
+	cpu.flags.zero = newValue == 0
 
 	return uint16(newValue)
 }
 
-func testADD () {
+func (cpu *CPU) adc(value uint8) uint8 {
+	var carryValue uint8
+	if cpu.flags.carry {
+		carryValue = 1
+	} else {
+		carryValue = 0
+	}
+
+	newValue := uint16(cpu.registers.a) + uint16(value) + uint16(carryValue)
+
+	cpu.flags.carry = uint16(cpu.registers.a) + uint16(value) + uint16(carryValue) > 0xFF
+	cpu.flags.half_carry = (cpu.registers.a & 0x0F) + (value & 0x0F) + uint8(carryValue) > 0xF
+	cpu.flags.subtract = false
+	cpu.flags.zero = newValue == 0
+
+	return uint8(newValue)
+}
+
+func testADD() {
 	// Create a new CPU and set some initial values
 	cpu := NewCPU()
 	cpu.registers.set_af(0x6400) // 100 in A
@@ -157,10 +210,32 @@ func testADDHL() {
 	// Print the result of the addition
 	fmt.Printf("HL register after ADDHL: %d\n", cpu.registers.get_hl()) // Should be 4109
 	fmt.Printf("Carry flag: %v\n", cpu.flags.carry) // Should be false
-	fmt.Printf("Half Carry Flag: %v\n", cpu.flags.half_carry) // Should be true
+	fmt.Printf("Half Carry Flag: %v\n\n", cpu.flags.half_carry) // Should be true
+}
+
+func testADC() {
+	// Create a new CPU and set some initial values
+	cpu := NewCPU()
+	cpu.registers.a = 0XFF // 255 in A
+	cpu.registers.b = 0xE1 // 225 in C
+
+	// Create an ADD instruction targeting the C register
+	instruction := NewInstruction(ADC, B)
+
+	// Execute the instruction
+	err := cpu.execute(instruction)
+	if err != nil {
+		panic(err)
+	}
+
+	// Print the result of the addition
+	fmt.Printf("A register after ADC: %d\n", cpu.registers.a) // Should be 4109
+	fmt.Printf("Carry flag: %v\n", cpu.flags.carry) // Should be true
+	fmt.Printf("Half Carry Flag: %v\n\n", cpu.flags.half_carry) // Should be true
 }
 
 func main() {
 	testADD()
 	testADDHL()
+	testADC()
 }
