@@ -4,7 +4,7 @@ type FlagRegister struct {
 	zero, subtract, half_carry, carry bool
 }
 
-const ZERO_FLAG_BYTE_POSITION uint8       = 7
+const ZERO_FLAG_BYTE_POSITION uint8       = 7;
 const SUBTRACT_FLAG_BYTE_POSITION uint8   = 6;
 const HALF_CARRY_FLAG_BYTE_POSITION uint8 = 5;
 const CARRY_FLAG_BYTE_POSITION uint8      = 4;
